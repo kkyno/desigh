@@ -1,840 +1,570 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>长征星路 · The Long March</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
-
-<!-- Three.js r128 -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<!-- Three.js Post-Processing -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-<!-- GSAP + ScrollTrigger -->
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-
-<style>
-/* ===================== RESET & BASE ===================== */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --red:        #C8102E;
-  --red-dark:   #7a0a1a;
-  --red-glow:   rgba(200, 16, 46, 0.6);
-  --gold:       #D4AF37;
-  --gold-light: #F5D78A;
-  --gold-glow:  rgba(212, 175, 55, 0.5);
-  --bg:         #040008;
-  --bg2:        #0d0014;
-  --text:       rgba(255,255,255,0.88);
-  --text-muted: rgba(255,255,255,0.42);
-  --paper:      #f2e8d5;
-  --ink:        #1a0f0a;
-}
-
-html { scroll-behavior: auto; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Noto Serif SC', serif;
-  overflow-x: hidden;
-  cursor: none;
-}
-
-/* ===================== CUSTOM CURSOR ===================== */
-#cursor {
-  position: fixed;
-  width: 10px; height: 10px;
-  background: var(--gold);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
-  transform: translate(-50%, -50%);
-  transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
-}
-#cursor.hover { width: 28px; height: 28px; background: var(--red); }
-#cursor-ring {
-  position: fixed;
-  width: 32px; height: 32px;
-  border: 1px solid rgba(212,175,55,0.5);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9998;
-  transform: translate(-50%, -50%);
-  transition: transform 0.15s, width 0.2s, height 0.2s;
-}
-
-/* ===================== THREE.JS CANVAS ===================== */
-#three-canvas {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 0;
-}
-
-/* ===================== SCROLL CONTAINER ===================== */
-#scroll-container {
-  position: relative;
-  height: 800vh;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* ===================== FIXED SCENE OVERLAY ===================== */
-#scene-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 2;
-  pointer-events: none;
-}
-
-/* ===================== INTRO TITLE ===================== */
-#intro {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
-}
-#intro-main {
-  font-family: 'Cinzel', serif;
-  font-size: clamp(14px, 2.2vw, 22px);
-  letter-spacing: 14px;
-  color: var(--gold-light);
-  opacity: 0;
-  animation: fadeInSlide 2s 0.6s ease forwards;
-  text-transform: uppercase;
-}
-#intro-zh {
-  font-size: clamp(42px, 8vw, 90px);
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  line-height: 1;
-  color: #fff;
-  margin: 14px 0 20px;
-  opacity: 0;
-  animation: fadeInSlide 2s 0.9s ease forwards;
-  text-shadow: 0 0 60px var(--red-glow), 0 0 120px rgba(200,16,46,0.3);
-}
-#intro-year {
-  font-size: clamp(12px, 1.4vw, 14px);
-  letter-spacing: 6px;
-  color: var(--text-muted);
-  opacity: 0;
-  animation: fadeInSlide 2s 1.2s ease forwards;
-}
-#intro-scroll {
-  margin-top: 64px;
-  font-size: 11px;
-  letter-spacing: 5px;
-  color: rgba(255,255,255,0.25);
-  opacity: 0;
-  animation: fadeInSlide 2s 2s ease forwards, breathe 2.5s 2.5s infinite;
-  text-transform: uppercase;
-}
-.scroll-arrow {
-  display: block;
-  width: 1px; height: 48px;
-  background: linear-gradient(to bottom, transparent, var(--gold));
-  margin: 12px auto 0;
-  animation: dropLine 2s 2.5s infinite;
-}
-
-@keyframes fadeInSlide {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes breathe {
-  0%,100% { opacity: 0.25; } 50% { opacity: 0.7; }
-}
-@keyframes dropLine {
-  0%   { transform: scaleY(0); transform-origin: top; opacity: 1; }
-  50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
-  100% { transform: scaleY(1); transform-origin: top; opacity: 0; }
-}
-
-/* ===================== PROGRESS HUD ===================== */
-#hud {
-  position: fixed;
-  right: 40px; top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 0.6s;
-}
-#hud.visible { opacity: 1; }
-#hud-line {
-  width: 1px; height: 120px;
-  background: linear-gradient(to bottom, transparent, var(--gold));
-}
-#hud-progress {
-  width: 1px; height: 0px;
-  background: var(--gold);
-  position: absolute;
-  top: 0;
-  transition: height 0.1s linear;
-}
-#hud-label {
-  writing-mode: vertical-rl;
-  font-size: 10px;
-  letter-spacing: 3px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-top: 12px;
-}
-#hud-percent {
-  font-family: 'Cinzel', serif;
-  font-size: 11px;
-  color: var(--gold);
-  margin-top: 8px;
-}
-
-/* ===================== SECTION LABELS ===================== */
-.section-label {
-  position: fixed;
-  left: 40px;
-  z-index: 10;
-  opacity: 0;
-  transform: translateX(-20px);
-  transition: opacity 0.5s, transform 0.5s;
-  pointer-events: none;
-}
-.section-label.visible {
-  opacity: 1;
-  transform: translateX(0);
-}
-.section-label .label-en {
-  font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 4px;
-  color: var(--gold);
-  text-transform: uppercase;
-}
-.section-label .label-zh {
-  font-size: clamp(16px, 3vw, 28px);
-  font-weight: 600;
-  color: #fff;
-  margin-top: 4px;
-  text-shadow: 0 0 30px var(--red-glow);
-}
-.section-label .label-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 6px;
-  max-width: 200px;
-  line-height: 1.6;
-}
-
-/* ===================== MILESTONE TOOLTIP ===================== */
-#milestone-tooltip {
-  position: fixed;
-  z-index: 20;
-  background: rgba(4, 0, 8, 0.9);
-  border: 1px solid rgba(212,175,55,0.4);
-  border-radius: 2px;
-  padding: 20px 24px;
-  width: 280px;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.3s, transform 0.3s;
-  pointer-events: none;
-  backdrop-filter: blur(12px);
-}
-#milestone-tooltip.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-#milestone-tooltip::before {
-  content: '';
-  position: absolute;
-  left: -1px; top: 0;
-  width: 3px; height: 100%;
-  background: var(--gold);
-}
-.tip-date {
-  font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 3px;
-  color: var(--gold);
-  margin-bottom: 8px;
-}
-.tip-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 10px;
-}
-.tip-desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.75;
-}
-
-/* ===================== END SCENE ===================== */
-#end-scene {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 15;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 1.2s ease;
-}
-#end-scene.visible { opacity: 1; pointer-events: auto; }
-
-#end-star-wrap {
-  position: relative;
-  width: 280px; height: 280px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-#end-star-canvas {
-  width: 280px; height: 280px;
-}
-
-/* Hold ring */
-#hold-ring-svg {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 320px; height: 320px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-}
-#hold-ring-svg.active { opacity: 1; }
-#ring-track {
-  fill: none;
-  stroke: rgba(212,175,55,0.15);
-  stroke-width: 2;
-}
-#ring-fill {
-  fill: none;
-  stroke: var(--gold);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 942;
-  stroke-dashoffset: 942;
-  transform-origin: center;
-  transform: rotate(-90deg);
-  transition: stroke-dashoffset 0.04s linear;
-}
-
-#end-title {
-  margin-top: 32px;
-  font-family: 'Cinzel', serif;
-  font-size: clamp(13px, 2vw, 18px);
-  letter-spacing: 12px;
-  color: var(--gold-light);
-  text-align: center;
-}
-#end-zh {
-  font-size: clamp(26px, 4vw, 40px);
-  font-weight: 900;
-  letter-spacing: 8px;
-  color: #fff;
-  margin-top: 8px;
-  text-shadow: 0 0 40px var(--red-glow);
-}
-#end-hint {
-  margin-top: 20px;
-  font-size: 11px;
-  letter-spacing: 3px;
-  color: var(--text-muted);
-  text-align: center;
-  animation: breathe 2.5s infinite;
-}
-
-/* ===================== FLASH TRANSITION ===================== */
-#flash {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: #fff;
-  opacity: 0;
-  z-index: 50;
-  pointer-events: none;
-  transition: opacity 0.5s;
-}
-
-/* ===================== MEMORY PAGE ===================== */
-#memory-page {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: var(--paper);
-  color: var(--ink);
-  z-index: 40;
-  overflow-y: auto;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0s;
-  cursor: auto;
-}
-#memory-page.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-#memory-close {
-  position: fixed;
-  top: 32px; right: 40px;
-  background: transparent;
-  border: 1px solid var(--red-dark);
-  color: var(--red-dark);
-  padding: 8px 24px;
-  font-family: 'Cinzel', serif;
-  font-size: 11px;
-  letter-spacing: 3px;
-  cursor: pointer;
-  z-index: 41;
-  text-transform: uppercase;
-  transition: background 0.2s, color 0.2s;
-}
-#memory-close:hover {
-  background: var(--red-dark);
-  color: var(--paper);
-}
-
-.memory-inner {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 80px 40px 120px;
-}
-
-.memory-header {
-  text-align: center;
-  padding-bottom: 48px;
-  border-bottom: 1px solid rgba(26,15,10,0.15);
-  margin-bottom: 60px;
-}
-.memory-header .label {
-  font-family: 'Cinzel', serif;
-  font-size: 11px;
-  letter-spacing: 6px;
-  color: var(--red);
-  text-transform: uppercase;
-  display: block;
-  margin-bottom: 16px;
-}
-.memory-header h1 {
-  font-size: clamp(32px, 5vw, 52px);
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  color: var(--ink);
-  line-height: 1;
-}
-.memory-header .sub {
-  margin-top: 14px;
-  font-size: 13px;
-  color: rgba(26,15,10,0.45);
-  letter-spacing: 2px;
-}
-
-.chapter {
-  display: grid;
-  grid-template-columns: 72px 1fr;
-  gap: 24px 32px;
-  margin-bottom: 64px;
-  padding-bottom: 64px;
-  border-bottom: 1px solid rgba(26,15,10,0.08);
-  align-items: start;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.7s, transform 0.7s;
-}
-.chapter.in-view { opacity: 1; transform: none; }
-
-.chapter-number {
-  font-family: 'Cinzel', serif;
-  font-size: 48px;
-  font-weight: 700;
-  color: rgba(200,16,46,0.12);
-  line-height: 1;
-  text-align: center;
-  padding-top: 4px;
-}
-.chapter-icon-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 12px;
-}
-.chapter-icon-wrap canvas {
-  width: 48px; height: 48px;
-}
-
-.chapter-content {}
-.chapter-date {
-  font-family: 'Cinzel', serif;
-  font-size: 10px;
-  letter-spacing: 4px;
-  color: var(--red);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-.chapter-title {
-  font-size: clamp(20px, 3vw, 28px);
-  font-weight: 900;
-  color: var(--ink);
-  margin-bottom: 16px;
-  letter-spacing: 0.05em;
-}
-.chapter-body {
-  font-size: 15px;
-  line-height: 2;
-  color: rgba(26,15,10,0.7);
-}
-.chapter-body p { margin-bottom: 14px; }
-.chapter-quote {
-  margin: 20px 0;
-  padding: 16px 24px;
-  border-left: 3px solid var(--red);
-  background: rgba(200,16,46,0.04);
-  font-size: 14px;
-  font-style: italic;
-  color: var(--red-dark);
-  line-height: 1.8;
-}
-
-.obj-3d-wrap {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  margin: -10px 0 10px;
-}
-.obj-3d-wrap canvas {
-  width: 160px; height: 120px;
-  opacity: 0.9;
-  cursor: grab;
-}
-.obj-3d-wrap canvas:active { cursor: grabbing; }
-.obj-label {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: rgba(26,15,10,0.35);
-  text-align: center;
-  margin-top: 6px;
-  text-transform: uppercase;
-}
-
-.memory-footer {
-  text-align: center;
-  padding-top: 40px;
-}
-.memory-footer .star-row {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 24px;
-}
-.memory-footer p {
-  font-size: 13px;
-  color: rgba(26,15,10,0.4);
-  letter-spacing: 2px;
-  line-height: 2;
-}
-
-/* ===================== LOADING ===================== */
-#loading {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: var(--bg);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.8s;
-}
-#loading.done { opacity: 0; pointer-events: none; }
-.loading-star {
-  font-size: 40px;
-  color: var(--red);
-  animation: spin 1.5s linear infinite;
-  text-shadow: 0 0 20px var(--red-glow);
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text {
-  margin-top: 20px;
-  font-size: 11px;
-  letter-spacing: 5px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-.loading-bar {
-  width: 160px; height: 1px;
-  background: rgba(255,255,255,0.1);
-  margin-top: 24px;
-  border-radius: 1px;
-  overflow: hidden;
-}
-.loading-bar-fill {
-  height: 100%;
-  background: var(--gold);
-  width: 0%;
-  animation: loadBar 1.8s ease-out forwards;
-}
-@keyframes loadBar {
-  to { width: 100%; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长征星路 - 三渲二交互体验</title>
+    <!-- 像素字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            overflow-x: hidden;
+            background-color: #0A0A1A;
+            font-family: 'Press Start 2P', monospace;
+            color: #fff;
+        }
+        /* 3D画布容器 */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        /* 节点信息弹窗 */
+        #info-panel {
+            position: absolute;
+            display: none;
+            background-color: rgba(10, 10, 26, 0.92);
+            border: 2px solid #FFD700;
+            padding: 16px;
+            border-radius: 6px;
+            max-width: 320px;
+            z-index: 100;
+            font-size: 11px;
+            line-height: 1.6;
+            pointer-events: none;
+        }
+        #info-panel h3 {
+            color: #FFD700;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 0 rgba(255,215,0,0.6);
+        }
+        /* 转场遮罩 */
+        .transition-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #fff;
+            opacity: 0;
+            z-index: 999;
+            pointer-events: none;
+        }
+        /* 长按进度环 */
+        .progress-ring {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+            z-index: 101;
+            display: none;
+        }
+        .progress-ring-circle {
+            stroke-dasharray: 377;
+            stroke-dashoffset: 377;
+            transition: stroke-dashoffset 0.05s;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+        /* 长征长卷页面 */
+        #timeline-container {
+            position: relative;
+            z-index: 10;
+            background: #0A0A1A;
+            min-height: 100vh;
+            display: none;
+        }
+        .timeline-section {
+            min-height: 100vh;
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .timeline-title {
+            text-align: center;
+            font-size: 24px;
+            color: #FF1744;
+            text-shadow: 2px 2px 0 rgba(255,23,68,0.7);
+            margin-bottom: 80px;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 120px;
+        }
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: -120px;
+            width: 4px;
+            background: #FF1744;
+            transform: translateX(-50%);
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 50%;
+            top: 24px;
+            width: 20px;
+            height: 20px;
+            background: #FFD700;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        .timeline-content {
+            width: 45%;
+            padding: 24px;
+            background: rgba(26, 26, 58, 0.85);
+            border: 2px solid #FF1744;
+        }
+        .timeline-item:nth-child(odd) .timeline-content {
+            margin-right: auto;
+        }
+        .timeline-item:nth-child(even) .timeline-content {
+            margin-left: 55%;
+        }
+        .timeline-content h2 {
+            color: #FFD700;
+            font-size: 16px;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 0 rgba(255,215,0,0.6);
+        }
+        .timeline-content p {
+            font-size: 11px;
+            line-height: 1.8;
+        }
+        /* 浮动动画 */
+        @keyframes float {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-18px); }
+        }
+        .float-anim {
+            animation: float 3s ease-in-out infinite;
+        }
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0A0A1A; }
+        ::-webkit-scrollbar-thumb { background: #FF1744; border-radius: 4px; }
+    </style>
+    <!-- 稳定CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.140.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/ScrollTrigger.min.js"></script>
 </head>
 <body>
+    <!-- 3D主场景 -->
+    <div id="canvas-container"></div>
 
-<!-- Loading Screen -->
-<div id="loading">
-  <div class="loading-star">★</div>
-  <div class="loading-text">初始化星路</div>
-  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
-</div>
-
-<!-- Custom Cursor -->
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
-
-<!-- Three.js Canvas -->
-<canvas id="three-canvas"></canvas>
-
-<!-- Scroll Container (creates scroll height) -->
-<div id="scroll-container"></div>
-
-<!-- Fixed Scene Overlay -->
-<div id="scene-overlay">
-  <!-- Intro -->
-  <div id="intro">
-    <div id="intro-main">The Long March · 1934–1935</div>
-    <div id="intro-zh">长征星路</div>
-    <div id="intro-year">两万五千里 · 十一个省份 · 三百六十五个昼夜</div>
-    <div id="intro-scroll">向下滚动，踏上征途
-      <span class="scroll-arrow"></span>
+    <!-- 节点信息弹窗 -->
+    <div id="info-panel">
+        <h3></h3>
+        <p></p>
     </div>
-  </div>
 
-  <!-- Section Labels -->
-  <div class="section-label" id="label-swirl" style="top:50%;transform:translateY(-50%);">
-    <div class="label-en">Phase I</div>
-    <div class="label-zh">星辰盘旋</div>
-    <div class="label-desc">万颗红星，在历史的夜空中自由旋转</div>
-  </div>
-  <div class="section-label" id="label-path" style="top:50%;transform:translateY(-50%);">
-    <div class="label-en">Phase II</div>
-    <div class="label-zh">星路成形</div>
-    <div class="label-desc">星星汇聚，铺就一条光明的征途</div>
-  </div>
-  <div class="section-label" id="label-march" style="top:50%;transform:translateY(-50%);">
-    <div class="label-en">Phase III</div>
-    <div class="label-zh">沿路前行</div>
-    <div class="label-desc">视角穿越历史，见证伟大的长征</div>
-  </div>
-</div>
+    <!-- 全屏转场遮罩 -->
+    <div class="transition-overlay" id="transition-overlay"></div>
 
-<!-- HUD -->
-<div id="hud">
-  <div style="position:relative; width:1px; height:120px;">
-    <div id="hud-line"></div>
-    <div id="hud-progress"></div>
-  </div>
-  <div id="hud-label">Journey</div>
-  <div id="hud-percent">0%</div>
-</div>
-
-<!-- Milestone Tooltip -->
-<div id="milestone-tooltip">
-  <div class="tip-date" id="tip-date"></div>
-  <div class="tip-title" id="tip-title"></div>
-  <div class="tip-desc" id="tip-desc"></div>
-</div>
-
-<!-- End Scene -->
-<div id="end-scene">
-  <div id="end-star-wrap">
-    <canvas id="end-star-canvas" width="560" height="560"></canvas>
-    <svg id="hold-ring-svg" viewBox="0 0 320 320">
-      <circle class="" id="ring-track" cx="160" cy="160" r="150"/>
-      <circle id="ring-fill" cx="160" cy="160" r="150"/>
+    <!-- 长按进度圆环 -->
+    <svg class="progress-ring" id="progress-ring">
+        <circle class="progress-ring-circle" stroke="#FFD700" stroke-width="8" fill="transparent" r="60" cx="75" cy="75"/>
     </svg>
-  </div>
-  <div id="end-title">Yan'an · October 1935</div>
-  <div id="end-zh">延安·会师</div>
-  <div id="end-hint">长按星星进入战士回忆 · Hold to Enter Memories</div>
-</div>
 
-<!-- Flash Overlay -->
-<div id="flash"></div>
+    <!-- 长征历程长卷页面 -->
+    <div id="timeline-container">
+        <section class="timeline-section">
+            <h1 class="timeline-title">长征历程</h1>
 
-<!-- Memory Page -->
-<div id="memory-page">
-  <button id="memory-close">← 返回征途</button>
-  <div class="memory-inner">
-    <div class="memory-header">
-      <span class="label">Soldiers' Memoirs · 战士回忆录</span>
-      <h1>长征记忆</h1>
-      <div class="sub">1934 — 1935 · 两万五千里的光辉岁月</div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content float-anim">
+                    <h2>瑞金出发</h2>
+                    <p>1934年10月，中央红军从江西瑞金出发，踏上二万五千里长征之路，突破敌人重重封锁。</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content float-anim">
+                    <h2>遵义会议</h2>
+                    <p>1935年1月，遵义会议召开，确立正确领导方向，成为中国革命历史上生死攸关的转折点。</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content float-anim">
+                    <h2>四渡赤水</h2>
+                    <p>红军灵活穿插敌军之间，声东击西、迂回作战，创造了军事史上以少胜多的经典战例。</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content float-anim">
+                    <h2>飞夺泸定桥</h2>
+                    <p>1935年5月，红军勇士冒着枪林弹雨，攀越光秃秃的铁索，成功抢占泸定桥，打通前进道路。</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content float-anim">
+                    <h2>翻雪山 过草地</h2>
+                    <p>翻越终年积雪的夹金山，穿越荒无人烟的沼泽草地，红军凭借钢铁意志战胜极端恶劣环境。</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content float-anim">
+                    <h2>会宁会师</h2>
+                    <p>1936年10月，三大主力红军在甘肃会宁胜利会师，标志着二万五千里长征圆满结束。</p>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <!-- Chapter 1 -->
-    <div class="chapter" id="ch1">
-      <div>
-        <div class="chapter-number">01</div>
-        <div class="chapter-icon-wrap">
-          <canvas id="icon1" width="96" height="96"></canvas>
-        </div>
-      </div>
-      <div class="chapter-content">
-        <div class="chapter-date">1934年10月 · 江西瑞金</div>
-        <div class="chapter-title">战略转移，踏上征程</div>
-        <div class="chapter-body">
-          <p>深秋的赣南，枫叶如火。1934年10月16日，中央红军八万六千余人，背负着革命的使命，悄然离开了这片奋斗了六年的红色土地。</p>
-          <p>战士们穿着草鞋，迈着坚定的步伐，向着未知的西方走去。没有人知道路有多长，但所有人都知道，前行是唯一的方向。</p>
-          <div class="chapter-quote">
-            "我们不知道要走多远，不知道前方是什么。但我们知道，党在哪里，我们就在哪里。" —— 一位老战士的回忆
-          </div>
-        </div>
-      </div>
-      <div class="obj-3d-wrap" id="obj1-wrap">
-        <div>
-          <canvas id="obj1" width="320" height="240"></canvas>
-          <div class="obj-label">草鞋 · Grass Sandal</div>
-        </div>
-      </div>
-    </div>
+    <script>
+        // 全局变量（纯英文，无中文变量名）
+        let scene, camera, renderer;
+        let starInstances = [];
+        let routeCurve;
+        let mainStar;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let selectedStar = null;
+        let scrollProgress = 0;
+        let isTimelineVisible = false;
+        let longPressTimer = null;
+        let longPressActive = false;
+        const clock = new THREE.Clock();
 
-    <!-- Chapter 2 -->
-    <div class="chapter" id="ch2">
-      <div>
-        <div class="chapter-number">02</div>
-        <div class="chapter-icon-wrap">
-          <canvas id="icon2" width="96" height="96"></canvas>
-        </div>
-      </div>
-      <div class="chapter-content">
-        <div class="chapter-date">1935年1月 · 贵州遵义</div>
-        <div class="chapter-title">遵义会议，拨云见日</div>
-        <div class="chapter-body">
-          <p>贵州遵义，柏辉章公馆的灯火彻夜未熄。这场会议持续了三天，争论激烈而深刻。会议批判了博古、李德的错误军事路线，确立了毛泽东同志在党中央和红军中的领导地位。</p>
-          <p>这是中国共产党历史上一个生死攸关的转折点。从此，长征有了正确的方向。</p>
-          <div class="chapter-quote">
-            "遵义会议是中国共产党历史上一个生死攸关的转折点，是党内第一次独立自主地运用马克思列宁主义原理解决问题。"
-          </div>
-        </div>
-      </div>
-      <div class="obj-3d-wrap" id="obj2-wrap">
-        <div>
-          <canvas id="obj2" width="320" height="240"></canvas>
-          <div class="obj-label">旧步枪 · Old Rifle</div>
-        </div>
-      </div>
-    </div>
+        // 长征重要节点数据
+        const nodeList = [
+            { name: "瑞金出发", pos: new THREE.Vector3(0, 0, 0), desc: "1934年10月，中央红军从瑞金出发，开启伟大长征。" },
+            { name: "遵义会议", pos: new THREE.Vector3(10, 2, 5), desc: "1935年1月，遵义会议挽救党、挽救红军、挽救中国革命。" },
+            { name: "四渡赤水", pos: new THREE.Vector3(20, 1, -3), desc: "巧妙迂回作战，摆脱敌军围追堵截，堪称军事奇迹。" },
+            { name: "飞夺泸定桥", pos: new THREE.Vector3(30, 3, 2), desc: "勇士攀铁索冲锋，冲破天险，奋勇向前。" },
+            { name: "翻雪山过草地", pos: new THREE.Vector3(40, 5, -5), desc: "忍饥耐寒，跨越绝境，坚守革命信念。" },
+            { name: "会宁会师", pos: new THREE.Vector3(50, 2, 0), desc: "1936年10月三军会师，二万五千里长征胜利收官。" }
+        ];
+        let goldStarGroup = [];
 
-    <!-- Chapter 3 -->
-    <div class="chapter" id="ch3">
-      <div>
-        <div class="chapter-number">03</div>
-        <div class="chapter-icon-wrap">
-          <canvas id="icon3" width="96" height="96"></canvas>
-        </div>
-      </div>
-      <div class="chapter-content">
-        <div class="chapter-date">1935年5月 · 四川泸定</div>
-        <div class="chapter-title">飞夺泸定桥，铁血精神</div>
-        <div class="chapter-body">
-          <p>大渡河上，十三根铁索悬空而挂。对岸是严阵以待的守敌，木板已被拆去，只剩光秃秃的铁链在江风中摇曳。</p>
-          <p>二十二名勇士，手攀铁索，冒着枪林弹雨，匍匐向前。铁链冰冷，手掌磨破，但没有一个人松手。这十三根铁链，承载着千万人的生命与希望。</p>
-          <div class="chapter-quote">
-            "铁索寒，战士勇。那一天的大渡河，见证了什么叫做共产党人的信仰。" —— 参战勇士回忆
-          </div>
-        </div>
-      </div>
-      <div class="obj-3d-wrap" id="obj3-wrap">
-        <div>
-          <canvas id="obj3" width="320" height="240"></canvas>
-          <div class="obj-label">铁索 · Iron Chain</div>
-        </div>
-      </div>
-    </div>
+        // 初始化入口
+        function init() {
+            // 场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0A0A1A);
 
-    <!-- Chapter 4 -->
-    <div class="chapter" id="ch4">
-      <div>
-        <div class="chapter-number">04</div>
-        <div class="chapter-icon-wrap">
-          <canvas id="icon4" width="96" height="96"></canvas>
-        </div>
-      </div>
-      <div class="chapter-content">
-        <div class="chapter-date">1935年6-8月 · 川西高原</div>
-        <div class="chapter-title">雪山草地，生死考验</div>
-        <div class="chapter-body">
-          <p>夹金山，海拔四千三百米，终年积雪，空气稀薄。战士们穿着单薄的衣裳，互相搀扶着向上攀爬。高原反应让人头痛欲裂，但没有人请求停下。</p>
-          <p>翻越雪山之后，是更艰难的松潘草地。七天七夜，方圆五百里，遍地泥泞，断粮断炊。战士们以草根、树皮果腹，在生死边缘一步一步地挣扎前行。</p>
-          <div class="chapter-quote">
-            "雪山上永远留下了我的战友。每次想起，我都觉得我走的每一步，都要走出两个人的分量。"
-          </div>
-        </div>
-      </div>
-      <div class="obj-3d-wrap" id="obj4-wrap">
-        <div>
-          <canvas id="obj4" width="320" height="240"></canvas>
-          <div class="obj-label">日记本 · Field Diary</div>
-        </div>
-      </div>
-    </div>
+            // 相机
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 20);
 
-    <!-- Chapter 5 - Final -->
-    <div class="chapter" id="ch5">
-      <div>
-        <div class="chapter-number">05</div>
-        <div class="chapter-icon-wrap">
-          <canvas id="icon5" width="96" height="96"></canvas>
-        </div>
-      </div>
-      <div class="chapter-content">
-        <div class="chapter-date">1935年10月 · 陕西延安</div>
-        <div class="chapter-title">吴起镇会师，胜利曙光</div>
-        <div class="chapter-body">
-          <p>1935年10月19日，中央红军抵达陕北吴起镇，与陕北红军胜利会师。那一声声震天的欢呼，在黄土高原上回荡，一年来所有的苦难，在这一刻都化作了泪水与笑容。</p>
-          <p>两万五千里，整整三百六十五天，翻越十八座大山，渡过二十四条大河，经过十一个省。这是人类历史上前所未有的壮举。</p>
-          <p>长征胜利了。而更长的征程，刚刚开始。</p>
-          <div class="chapter-quote">
-            "长征是宣言书，长征是宣传队，长征是播种机。" —— 毛泽东
-          </div>
-        </div>
-      </div>
-    </div>
+            // 渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-    <div class="memory-footer">
-      <div class="star-row">
-        <span style="color:var(--red);font-size:20px;">★</span>
-        <span style="color:var(--red);font-size:24px;">★</span>
-        <span style="color:var(--red);font-size:20px;">★</span>
-      </div>
-      <p>长征精神，永垂不朽<br>
-      <span style="font-size:11px;letter-spacing:3px;">THE LONG MARCH SPIRIT LIVES ON FOREVER</span></p>
-    </div>
-  </div>
-</div>
+            // 灯光
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(5, 10, 7.5);
+            scene.add(dirLight);
 
-<!-- Main Script -->
-<script src="main.js"></script>
+            // 生成星星、路线、终点主星
+            createStarMesh();
+            createRouteLine();
+            createEndStar();
+
+            // 监听事件
+            window.addEventListener('resize', onResize);
+            window.addEventListener('scroll', onPageScroll);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('touchstart', onTouchStart);
+            window.addEventListener('touchend', onTouchEnd);
+
+            // 启动渲染循环
+            animateLoop();
+        }
+
+        // 1. 创建五角星几何体 + 实例化群星 + 金色节点星
+        function createStarMesh() {
+            // 五角星顶点
+            const starVerts = [];
+            const outerR = 1, innerR = 0.5;
+            for (let i = 0; i < 10; i++) {
+                const ang = (i * Math.PI * 2) / 10 - Math.PI / 2;
+                const r = i % 2 === 0 ? outerR : innerR;
+                starVerts.push(Math.cos(ang) * r, Math.sin(ang) * r, 0);
+            }
+            const starGeo = new THREE.BufferGeometry();
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+            starGeo.computeNormals();
+
+            // 普通红星材质
+            const redMat = new THREE.MeshPhongMaterial({
+                color: 0xFF1744,
+                emissive: 0xFF1744,
+                emissiveIntensity: 0.5
+            });
+
+            // 大量实例星星
+            const starCount = 1200;
+            const instancedStars = new THREE.InstancedMesh(starGeo, redMat, starCount);
+            scene.add(instancedStars);
+            const dummy = new THREE.Object3D();
+
+            for (let i = 0; i < starCount; i++) {
+                const r = Math.random() * 50 + 5;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.sin(phi) * Math.sin(theta);
+                const z = r * Math.cos(phi);
+
+                dummy.position.set(x, y, z);
+                dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+                dummy.scale.setScalar(Math.random() * 0.4 + 0.2);
+                dummy.updateMatrix();
+                instancedStars.setMatrixAt(i, dummy.matrix);
+
+                starInstances.push({
+                    initPos: new THREE.Vector3(x, y, z),
+                    orbitSpeed: Math.random() * 0.004 + 0.001,
+                    orbitAng: Math.random() * Math.PI * 2
+                });
+            }
+
+            // 金色节点星星（交互点）
+            const goldMat = new THREE.MeshPhongMaterial({
+                color: 0xFFD700,
+                emissive: 0xFFD700,
+                emissiveIntensity: 0.8
+            });
+            nodeList.forEach(item => {
+                const goldStar = new THREE.Mesh(starGeo, goldMat.clone());
+                goldStar.position.copy(item.pos);
+                goldStar.scale.setScalar(0.8);
+                goldStar.userData = { name: item.name, desc: item.desc };
+                scene.add(goldStar);
+                goldStarGroup.push(goldStar);
+            });
+        }
+
+        // 2. 创建长征路线曲线
+        function createRouteLine() {
+            const points = nodeList.map(item => item.pos);
+            routeCurve = new THREE.CatmullRomCurve3(points);
+            const tubeGeo = new THREE.TubeGeometry(routeCurve, 120, 0.12, 8, false);
+            const lineMat = new THREE.MeshPhongMaterial({
+                color: 0xFF1744,
+                transparent: true,
+                opacity: 0.6
+            });
+            const routeMesh = new THREE.Mesh(tubeGeo, lineMat);
+            scene.add(routeMesh);
+        }
+
+        // 3. 创建终点巨型五角星
+        function createEndStar() {
+            const starVerts = [];
+            const outerR = 1, innerR = 0.5;
+            for (let i = 0; i < 10; i++) {
+                const ang = (i * Math.PI * 2) / 10 - Math.PI / 2;
+                const r = i % 2 === 0 ? outerR : innerR;
+                starVerts.push(Math.cos(ang) * r, Math.sin(ang) * r, 0);
+            }
+            const starGeo = new THREE.BufferGeometry();
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+            starGeo.computeNormals();
+
+            const endMat = new THREE.MeshPhongMaterial({
+                color: 0xFF1744,
+                emissive: 0xFF1744,
+                emissiveIntensity: 1
+            });
+            mainStar = new THREE.Mesh(starGeo, endMat);
+            mainStar.scale.setScalar(3);
+            mainStar.position.set(50, 2, 0);
+            mainStar.visible = false;
+            mainStar.userData.isEndStar = true;
+            scene.add(mainStar);
+        }
+
+        // 窗口适配
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // 页面滚动
+        function onPageScroll() {
+            if (isTimelineVisible) return;
+            const scrollTop = window.pageYOffset;
+            const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+            scrollProgress = Math.min(scrollTop / totalHeight, 1);
+
+            // 滚动过半显示终点大星
+            if (scrollProgress > 0.5 && !mainStar.visible) {
+                mainStar.visible = true;
+            }
+        }
+
+        // 鼠标移动 - 射线检测金色星星 + 弹窗
+        function onMouseMove(e) {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(goldStarGroup);
+            const infoPanel = document.getElementById('info-panel');
+
+            if (intersects.length > 0) {
+                const hitObj = intersects[0].object;
+                // 高亮星星
+                goldStarGroup.forEach(star => star.material.emissiveIntensity = 0.8);
+                hitObj.material.emissiveIntensity = 1.6;
+                selectedStar = hitObj;
+
+                // 填充弹窗内容
+                infoPanel.querySelector('h3').innerText = hitObj.userData.name;
+                infoPanel.querySelector('p').innerText = hitObj.userData.desc;
+
+                // 3D坐标转屏幕坐标
+                const screenPos = new THREE.Vector3();
+                screenPos.copy(hitObj.position).project(camera);
+                const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+                infoPanel.style.left = (x + 20) + 'px';
+                infoPanel.style.top = (y - 20) + 'px';
+                infoPanel.style.display = 'block';
+            } else {
+                // 隐藏弹窗、恢复亮度
+                infoPanel.style.display = 'none';
+                if (selectedStar) {
+                    selectedStar.material.emissiveIntensity = 0.8;
+                    selectedStar = null;
+                }
+            }
+        }
+
+        // 鼠标按下 - 检测长按终点星
+        function onMouseDown(e) {
+            if (isTimelineVisible || !mainStar.visible) return;
+            raycaster.setFromCamera(mouse, camera);
+            const hit = raycaster.intersectObject(mainStar);
+            if (hit.length > 0) {
+                longPressActive = true;
+                startLongPress();
+            }
+        }
+        function onMouseUp() { cancelLongPress(); }
+
+        // 触屏兼容
+        function onTouchStart(e) {
+            if (isTimelineVisible || !mainStar.visible) return;
+            const touch = e.touches[0];
+            mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const hit = raycaster.intersectObject(mainStar);
+            if (hit.length > 0) {
+                longPressActive = true;
+                startLongPress();
+            }
+        }
+        function onTouchEnd() { cancelLongPress(); }
+
+        // 开始长按计时 1.2s
+        function startLongPress() {
+            const ring = document.getElementById('progress-ring');
+            const circle = ring.querySelector('.progress-ring-circle');
+            ring.style.display = 'block';
+
+            // GSAP 进度动画
+            longPressTimer = gsap.to(circle, {
+                strokeDashoffset: 0,
+                duration: 1.2,
+                ease: "none",
+                onComplete: () => {
+                    if (longPressActive) {
+                        switchToTimeline();
+                    }
+                }
+            });
+        }
+
+        // 取消长按
+        function cancelLongPress() {
+            longPressActive = false;
+            if (longPressTimer) {
+                longPressTimer.kill();
+                longPressTimer = null;
+            }
+            const ring = document.getElementById('progress-ring');
+            const circle = ring.querySelector('.progress-ring-circle');
+            circle.style.strokeDashoffset = 377;
+            ring.style.display = 'none';
+        }
+
+        // 白屏转场 -> 切换到长征长卷页面
+        function switchToTimeline() {
+            const overlay = document.getElementById('transition-overlay');
+            gsap.to(overlay, {
+                opacity: 1,
+                duration: 0.5,
+                onComplete: () => {
+                    // 隐藏3D画布，展示长卷
+                    document.getElementById('canvas-container').style.display = 'none';
+                    document.getElementById('timeline-container').style.display = 'block';
+                    isTimelineVisible = true;
+                    // 淡出遮罩
+                    gsap.to(overlay, { opacity: 0, duration: 0.5, delay: 0.3 });
+                }
+            });
+        }
+
+        // 主渲染动画
+        function animateLoop() {
+            requestAnimationFrame(animateLoop);
+            const time = clock.getElapsedTime();
+
+            // 普通星星盘旋
+            starInstances.forEach(star => {
+                star.orbitAng += star.orbitSpeed;
+            });
+
+            // 金色节点星轻微呼吸+旋转
+            goldStarGroup.forEach((star, idx) => {
+                star.rotation.y += 0.008;
+                const scale = 0.8 + Math.sin(time * 2 + idx) * 0.1;
+                star.scale.setScalar(scale);
+            });
+
+            // 终点大星自转
+            if (mainStar.visible) {
+                mainStar.rotation.y += 0.006;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // 启动
+        window.onload = init;
+    </script>
 </body>
 </html>
